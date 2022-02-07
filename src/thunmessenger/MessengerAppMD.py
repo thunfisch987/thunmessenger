@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 import ipaddress
 import json
 import re
@@ -18,6 +19,7 @@ from kivymd.uix.list import OneLineAvatarIconListItem
 from kivymd.uix.list import TwoLineListItem
 from kivymd.uix.button import MDRaisedButton
 from kivy.core.audio import SoundLoader
+from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 
 sound = None
@@ -106,7 +108,7 @@ class MessageInput(MDTextField):
             return
         return super().keyboard_on_key_down(*args, **kwargs)
 
-    def insert_msg(self, title: str, message: str, i_o: str) -> None:
+    def insert_msg(self, title: str, message: str, i_o: str, *args) -> None:
         if i_o == "incoming":
             self.item = MessageItem(title, message, "left")
         elif i_o == "outgoing":
@@ -123,16 +125,19 @@ class MessageInput(MDTextField):
         self.name = self.username.text
         self.msg = self.text
         self.message = Message(name=self.name, msg=self.msg)
-        if not self.ip_input.error:
+        current_time = datetime.now().strftime("%H:%M")
+        curry_time = "[" + current_time + "] "
+        esc_time = escape_markup(curry_time)
+        if not self.ip_input.error and self.ip_input.text != "":
             self.empfaenger = self.ip_input.text
         else:
-            self.empfaenger = "localhost"
-        serversocket.sendto(self.message.encoded(),
-                            (self.empfaenger, 15200))
+            self.empfaenger = "127.0.0.1"
+        serversocket.sendto(self.message.encoded(), (self.empfaenger, 15200))
         if self.name == "":
-            self.insert_msg("You", self.text, "outgoing")
+            self.insert_msg(esc_time + "You:", self.text, "outgoing")
         else:
-            self.insert_msg(self.username.text, self.text, "incoming")
+            self.insert_msg(esc_time + self.username.text + " (You):",
+                            self.text, "outgoing")
         if sound:
             sound.play()
         self.text = ""
@@ -156,25 +161,29 @@ class MessageInput(MDTextField):
             if self.incmessage.name != "":
                 msgtitle = esc_time + self.incmessage.name
                 if addr[0] == "127.0.0.1":
-                    self.insert_msg(msgtitle + " (You):",
-                                    self.incmessage.msg,
-                                    "incoming")
-                    self.output.add_widget(MessageItem(
-                        esc_time + self.incmessage.name + " (You):", self.incmessage.msg, halign="left"))
+                    Clock.schedule_once(partial(
+                        self.insert_msg, msgtitle + " (You):", self.incmessage.msg, "incoming"))
+                    # self.insert_msg(msgtitle + " (You):",
+                    #                 self.incmessage.msg,
+                    #                 "incoming")
                 else:
-                    self.insert_msg(msgtitle + ":",
-                                    self.incmessage.msg,
-                                    "incoming")
-                    self.output.add_widget(MessageItem(
-                        esc_time + self.incmessage.name + ":", self.incmessage.msg, halign="left"))
+                    Clock.schedule_once(
+                        partial(self.insert_msg, msgtitle + ":", self.incmessage.msg, "incoming"))
+                    # self.insert_msg(msgtitle + ":",
+                    #                 self.incmessage.msg,
+                    #                 "incoming")
             elif addr[0] == "127.0.0.1":
                 msgtitle = esc_time + addr[0]
-                self.insert_msg(msgtitle + " (You):",
-                                self.incmessage.msg, "incoming")
+                Clock.schedule_once(partial(
+                    self.insert_msg, msgtitle + " (You):", self.incmessage.msg, "incoming"))
+                # self.insert_msg(msgtitle + " (You):",
+                #                 self.incmessage.msg, "incoming")
             else:
                 msgtitle = esc_time + addr[0]
-                self.insert_msg(msgtitle + ":",
-                                self.incmessage.msg, "incoming")
+                Clock.schedule_once(
+                    partial(self.insert_msg, msgtitle + ":", self.incmessage.msg, "incoming"))
+                # self.insert_msg(msgtitle + ":",
+                #                 self.incmessage.msg, "incoming")
 
     def on_parent(self, *args, **kwargs) -> None:
         receivethread = Thread(target=self.listenformsg, daemon=True)
