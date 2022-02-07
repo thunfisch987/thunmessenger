@@ -1,0 +1,95 @@
+<UsernameLabel@MDTextField>
+<ToggleSoundButton@MDRaisedButton>:
+# <IPInput@MDTextField>
+<OutputList@MDList>
+<CharacterLabel@MDLabel>
+<SendButton@MDIconButton>
+<Messenger@MDGridLayout>
+<Item>:
+    on_release: root.set_icon(check)
+    CheckboxLeftWidget:
+        id: check
+        group: "check"
+
+<OKButton>:
+    on_release: app.change_sound()
+
+
+Messenger:
+    rows: 7
+    cols: 1
+    padding: [10]
+
+    MDBoxLayout:
+        id: username_frame
+        adaptive_height: True
+        UsernameLabel:
+            id: name_input
+            hint_text: "Username:"
+            multiline: False
+            write_tab: False
+            size_hint_x: 0.8
+            max_text_length: 9
+            # on_parent: self.focus = True
+        ToggleSoundButton:
+            id: sound_switch
+            size_hint_x: 0.2
+            text: "Toggle Sound"
+            adaptive_width: True
+            on_release: app.show_confirmation_dialog()
+
+    MDSeparator:
+
+    MDBoxLayout:
+        # size_hint_y: None
+        adaptive_height: True
+        IPInput:
+            id: ip_input
+            padding: [10]
+            hint_text: "IP Address"
+            helper_text: "Invalid IP"
+            helper_text_mode: "on_error"
+            # mode: "rectangle"
+            multiline: False
+            write_tab: False
+            max_text_length: 15
+
+
+    MDSeparator:
+
+    ScrollView:
+        id: scrolling
+        scroll_wheel_distance: 40
+        OutputList:
+            id: output
+
+    MDSeparator:
+
+    MDBoxLayout:
+        id: send_frame
+        adaptive_height: True
+        size_hint_x: 1
+        MDLabel:
+            text: "Nachricht (max. 1000 characters):"
+            adaptive_width: True
+            halign: "center"
+        MessageInput:
+            output: output
+            username: name_input
+            ip_input: ip_input
+            scroll_view: scrolling
+            id: message_input
+            hint_text: "Message"
+            max_height: "100dp"
+            multiline: True
+        CharacterLabel:
+            id: char_label
+            text: "Remaining characters: 1000"
+            adaptive_width: True
+            halign: "center"
+        SendButton:
+            id: send_button
+            on_release: message_input.sendmessage()
+            icon: "send"
+            theme_icon_color: "Custom"
+            icon_color: app.theme_cls.primary_color
