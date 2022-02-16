@@ -12,7 +12,6 @@ from Crypto.PublicKey import RSA
 from kivy.lang import Builder
 from kivy.config import Config
 
-Config.set("input", "mouse", "mouse,multitouch_on_demand")
 from kivy.utils import escape_markup
 
 from kivymd.app import MDApp
@@ -26,7 +25,6 @@ from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 
-Window.softinput_mode = "below_target"
 
 sound = None
 soundname: str | None = None
@@ -165,9 +163,9 @@ class MessageInput(MDTextField):
         else:
             with open("pubkey.pem", "rb") as f:
                 with socket() as sendkeysocket:
-                sendkeysocket.bind(("", 15202))
-                sendkeysocket.connect((self.empfaenger, 15201))
-                sendkeysocket.sendfile(f, 0)
+                    sendkeysocket.bind(("", 15202))
+                    sendkeysocket.connect((self.empfaenger, 15201))
+                    sendkeysocket.sendfile(f, 0)
             self.disabled = False
         self.text = ""
         self.focus = True
@@ -179,12 +177,12 @@ class MessageInput(MDTextField):
         with socket() as keysocket:
             keysocket.bind(("", 15201))
             keysocket.listen(1)
-        while True:
-            sc, adress = keysocket.accept()
-            while data := sc.recv(1024):
-                print(data)
-                with open(f"{adress[0]}.pem", "wb") as keyfile:
-                    keyfile.write(data)
+            while True:
+                sc, adress = keysocket.accept()
+                while data := sc.recv(1024):
+                    print(data)
+                    with open(f"{adress[0]}.pem", "wb") as keyfile:
+                        keyfile.write(data)
 
     def listenformsg(self) -> None:
         while True:
@@ -252,6 +250,8 @@ class MessengerWindow(MDApp):
     title = "Messenger"
 
     def __init__(self, *args, **kwargs) -> None:
+        Window.softinput_mode = "below_target"  # type: ignore
+        Config.set("input", "mouse", "mouse,multitouch_on_demand")
         super().__init__(*args, **kwargs)
         self.theme_cls.primary_palette = "Green"
 
