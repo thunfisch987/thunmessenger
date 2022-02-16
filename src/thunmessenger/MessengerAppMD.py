@@ -138,7 +138,7 @@ class MessageInput(MDTextField):
         self.scroll_view.scroll_to(self.item)
         return
 
-    def sendmessage(self):
+    def sendmessage(self) -> None:
         if not self.ip_input.error and self.ip_input.text != "":
             self.empfaenger = self.ip_input.text
         else:
@@ -153,10 +153,11 @@ class MessageInput(MDTextField):
             esc_time = escape_markup(curry_time)
             serversocket.sendto(self.message.encoded(), (self.empfaenger, 15200))
             if self.name == "":
-                self.insert_msg(f"{esc_time}You:", self.text, "outgoing")
+                self.insert_msg(f"{esc_time} You:", self.text, "outgoing")
             else:
                 self.insert_msg(
-                    f'{esc_time} + {self.username.text} + " (You):", {self.text}',
+                    f"{esc_time} {self.username.text} (You):",
+                    self.text,
                     "outgoing",
                 )
             if sound:
@@ -185,7 +186,7 @@ class MessageInput(MDTextField):
                 with open(f"{adress[0]}.pem", "wb") as keyfile:
                     keyfile.write(data)
 
-    def listenformsg(self):
+    def listenformsg(self) -> None:
         while True:
             jsondata, addr = serversocket.recvfrom(1024)
             if sound:
