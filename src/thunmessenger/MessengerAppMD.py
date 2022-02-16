@@ -98,9 +98,15 @@ class MessageInput(MDTextField):
     username = ObjectProperty(None)
     ip_input = ObjectProperty(None)
     scroll_view = ObjectProperty(None)
+    ip_list_for_widget = ObjectProperty(ip_list) # giving the kv file the list
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+    def check_disabled(self, *args, **kwargs):
+        return (
+            self.ip_input.text if self.ip_input.text != "" else "127.0.0.1"
+        ) not in ip_list
 
     def keyboard_on_key_down(self, *args, **kwargs) -> None | bool:
         if args[1][1] in ["enter", "return"]:
@@ -118,7 +124,11 @@ class MessageInput(MDTextField):
         return
 
     def sendmessage(self):
-        global serversocket
+        if not self.ip_input.error and self.ip_input.text != "":
+            self.empfaenger = self.ip_input.text
+        else:
+            self.empfaenger = "127.0.0.1"
+        if self.empfaenger in ip_list:
         if self.text == "":
             return
         # Message
@@ -140,9 +150,27 @@ class MessageInput(MDTextField):
                             self.text, "outgoing")
         if sound:
             sound.play()
+        else:
+            with open("pubkey.pem", "rb") as f:
+                sendkeysocket = st.socket()
+                sendkeysocket.bind(("", 15202))
+                sendkeysocket.connect((self.empfaenger, 15201))
+                sendkeysocket.sendfile(f, 0)
+                sendkeysocket.close()
+            self.disabled = False
         self.text = ""
         self.focus = True
+        self.error = False
+        ip_list.add(self.empfaenger)
         return
+
+    def listenforkey(self):
+        while True:
+            sc, adress = keysocket.accept()
+            while data := sc.recv(1024):
+                print(data)
+                with open(f"{adress[0]}.pem", "wb") as keyfile:
+                    keyfile.write(data)
 
     def listenformsg(self):
         global serversocket
@@ -188,6 +216,8 @@ class MessageInput(MDTextField):
     def on_parent(self, *args, **kwargs) -> None:
         receivethread = Thread(target=self.listenformsg, daemon=True)
         receivethread.start()
+        keyrcvthread = Thread(target=self.listenforkey, daemon=True)
+        keyrcvthread.start()
 
 
 class MessengerWindow(MDApp):
@@ -241,4 +271,17 @@ class MessengerWindow(MDApp):
 if __name__ == '__main__':
     serversocket = MessengerSocket()
     serversocket.bind(("", 15200))
+    keysocket = st.socket()
+    keysocket.bind(("", 15201))
+    keysocket.listen(1)
+
+    own_ip = st.gethostbyname(st.gethostname())
+    if (not os.path.exists("mykey.pem") and not os.path.exists("pubkey.pem")) or (
+        not os.path.exists("mykey.pem") or not os.path.exists("pubkey.pem")
+    ):
+        rsakey = RSA.generate(2048)
+        with open("mykey.pem", "wb") as privfile:
+            privfile.write(rsakey.export_key("PEM"))
+        with open("pubkey.pem", "wb") as pubfile:
+            pubfile.write(rsakey.public_key().export_key("PEM"))
     MessengerWindow().run()

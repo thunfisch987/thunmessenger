@@ -82,11 +82,8 @@ Messenger:
             hint_text: "Message"
             max_height: "100dp"
             multiline: True
-        CharacterLabel:
-            id: char_label
-            text: "Remaining characters: 1000"
-            adaptive_width: True
-            halign: "center"
+            max_text_length: 1000
+            disabled: (ip_input.text if ip_input.text != "" else "127.0.0.1") not in self.ip_list_for_widget
         SendButton:
             id: send_button
             on_release: message_input.sendmessage()
