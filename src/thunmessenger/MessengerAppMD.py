@@ -3,13 +3,15 @@ from datetime import datetime
 from functools import partial
 import ipaddress
 import json
-import re
+import os
 import socket as st
 from threading import Thread
+from Crypto.PublicKey import RSA
 
 from kivy.lang import Builder
 from kivy.config import Config
-Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+
+Config.set("input", "mouse", "mouse,multitouch_on_demand")
 from kivy.utils import escape_markup
 
 from kivymd.app import MDApp
@@ -21,13 +23,18 @@ from kivymd.uix.button import MDRaisedButton
 from kivy.core.audio import SoundLoader
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
+from kivy.core.window import Window
+
+Window.softinput_mode = "below_target"
 
 sound = None
+soundname: str | None = None
+ip_list = set()
 
 
 class MessengerSocket(st.socket):
-    def __init__(self, family: st.AddressFamily = st.AF_INET, type: st.SocketKind = st.SOCK_DGRAM) -> None:
-        super(MessengerSocket, self).__init__(family, type)
+    def __init__(self) -> None:
+        super(MessengerSocket, self).__init__(st.AF_INET, st.SOCK_DGRAM)
         return
 
 
@@ -52,10 +59,7 @@ class IPInput(MDTextField):
 
 
 @dataclass
-class Message:
-    name: str = ""
-    msg: str = ""
-
+class Sendable:
     def __jsondumps(self) -> str:
         return json.dumps(self.__dict__)
 
@@ -71,6 +75,12 @@ class Message:
     def updt(self, jsonmsg: bytes) -> None:
         self.__dict__.update(self.__jsonloads(jsonmsg))
         return
+
+
+@dataclass
+class Message(Sendable):
+    name: str = ""
+    msg: str = ""
 
 
 class MessageItem(TwoLineListItem):
@@ -98,7 +108,7 @@ class MessageInput(MDTextField):
     username = ObjectProperty(None)
     ip_input = ObjectProperty(None)
     scroll_view = ObjectProperty(None)
-    ip_list_for_widget = ObjectProperty(ip_list) # giving the kv file the list
+    ip_list_for_widget = ObjectProperty(ip_list)  # giving the kv file the list
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -129,27 +139,23 @@ class MessageInput(MDTextField):
         else:
             self.empfaenger = "127.0.0.1"
         if self.empfaenger in ip_list:
-        if self.text == "":
-            return
-        # Message
-        self.name = self.username.text
-        self.msg = self.text
-        self.message = Message(name=self.name, msg=self.msg)
-        current_time = datetime.now().strftime("%H:%M")
-        curry_time = "[" + current_time + "] "
-        esc_time = escape_markup(curry_time)
-        if not self.ip_input.error and self.ip_input.text != "":
-            self.empfaenger = self.ip_input.text
-        else:
-            self.empfaenger = "127.0.0.1"
-        serversocket.sendto(self.message.encoded(), (self.empfaenger, 15200))
-        if self.name == "":
-            self.insert_msg(esc_time + "You:", self.text, "outgoing")
-        else:
-            self.insert_msg(esc_time + self.username.text + " (You):",
-                            self.text, "outgoing")
-        if sound:
-            sound.play()
+            if self.text == "":
+                return
+            self.name = self.username.text
+            self.message = Message(name=self.name, msg=self.text[:1000])
+            current_time = datetime.now().strftime("%H:%M")
+            curry_time = f"[{current_time}] "
+            esc_time = escape_markup(curry_time)
+            serversocket.sendto(self.message.encoded(), (self.empfaenger, 15200))
+            if self.name == "":
+                self.insert_msg(f"{esc_time}You:", self.text, "outgoing")
+            else:
+                self.insert_msg(
+                    f'{esc_time} + {self.username.text} + " (You):", {self.text}',
+                    "outgoing",
+                )
+            if sound:
+                sound.play()
         else:
             with open("pubkey.pem", "rb") as f:
                 sendkeysocket = st.socket()
@@ -173,45 +179,58 @@ class MessageInput(MDTextField):
                     keyfile.write(data)
 
     def listenformsg(self):
-        global serversocket
         while True:
-            # print("-----running---------")
             jsondata, addr = serversocket.recvfrom(1024)
             if sound:
                 sound.play()
             self.incmessage = Message()
             self.incmessage.updt(jsondata)
-            # print("name:", self.incmessage.name)
-            # print("msg:", self.incmessage.msg)
             current_time = datetime.now().strftime("%H:%M")
-            curry_time = "[" + current_time + "] "
+            curry_time = f"[{current_time}] "
             esc_time = escape_markup(curry_time)
             if self.incmessage.name != "":
                 msgtitle = esc_time + self.incmessage.name
                 if addr[0] == "127.0.0.1":
-                    Clock.schedule_once(partial(
-                        self.insert_msg, msgtitle + " (You):", self.incmessage.msg, "incoming"))
-                    # self.insert_msg(msgtitle + " (You):",
-                    #                 self.incmessage.msg,
-                    #                 "incoming")
+                    Clock.schedule_once(
+                        partial(
+                            self.insert_msg,
+                            f"{msgtitle} (You):",
+                            self.incmessage.msg,
+                            "incoming",
+                        )
+                    )
+
                 else:
                     Clock.schedule_once(
-                        partial(self.insert_msg, msgtitle + ":", self.incmessage.msg, "incoming"))
-                    # self.insert_msg(msgtitle + ":",
-                    #                 self.incmessage.msg,
-                    #                 "incoming")
+                        partial(
+                            self.insert_msg,
+                            f"{msgtitle}:",
+                            self.incmessage.msg,
+                            "incoming",
+                        )
+                    )
+
             elif addr[0] == "127.0.0.1":
                 msgtitle = esc_time + addr[0]
-                Clock.schedule_once(partial(
-                    self.insert_msg, msgtitle + " (You):", self.incmessage.msg, "incoming"))
-                # self.insert_msg(msgtitle + " (You):",
-                #                 self.incmessage.msg, "incoming")
+                Clock.schedule_once(
+                    partial(
+                        self.insert_msg,
+                        f"{msgtitle} (You):",
+                        self.incmessage.msg,
+                        "incoming",
+                    )
+                )
+
             else:
                 msgtitle = esc_time + addr[0]
                 Clock.schedule_once(
-                    partial(self.insert_msg, msgtitle + ":", self.incmessage.msg, "incoming"))
-                # self.insert_msg(msgtitle + ":",
-                #                 self.incmessage.msg, "incoming")
+                    partial(
+                        self.insert_msg,
+                        f"{msgtitle}:",
+                        self.incmessage.msg,
+                        "incoming",
+                    )
+                )
 
     def on_parent(self, *args, **kwargs) -> None:
         receivethread = Thread(target=self.listenformsg, daemon=True)
@@ -222,19 +241,14 @@ class MessageInput(MDTextField):
 
 class MessengerWindow(MDApp):
     dialog = None
-    title = 'Messenger'
+    title = "Messenger"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.theme_cls.primary_palette = "Green"
-        # self.startlistening()
-
-    # def startlistening(self) -> None:
-    #     receivethread = Thread(target=self.listenformsg, daemon=True)
-    #     receivethread.start()
 
     def build(self):
-        return Builder.load_file('./messengerMD.kv')
+        return Builder.load_file("./messengerMD.kv")
 
     def change_sound(self) -> None:
         global sound, soundname
@@ -245,7 +259,7 @@ class MessengerWindow(MDApp):
         if soundname == "no sound":
             sound = None
         else:
-            sound = SoundLoader.load("sounds/" + soundname)
+            sound = SoundLoader.load(f"sounds/{soundname}")
         self.dialog.dismiss()
 
     def show_confirmation_dialog(self) -> None:
@@ -261,14 +275,12 @@ class MessengerWindow(MDApp):
                     Item(text="sound.wav"),
                     Item(text="tequila.mp3"),
                 ],
-                buttons=[
-                    MDRaisedButton(text="OK")
-                ]
+                buttons=[MDRaisedButton(text="OK")],
             )
         self.dialog.open()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     serversocket = MessengerSocket()
     serversocket.bind(("", 15200))
     keysocket = st.socket()
@@ -285,3 +297,5 @@ if __name__ == '__main__':
         with open("pubkey.pem", "wb") as pubfile:
             pubfile.write(rsakey.public_key().export_key("PEM"))
     MessengerWindow().run()
+else:
+    print("imports not allowed")
