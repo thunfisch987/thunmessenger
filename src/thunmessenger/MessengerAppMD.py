@@ -5,6 +5,7 @@ import ipaddress
 import json
 import os
 import socket as st
+from socket import socket, AF_INET, SOCK_DGRAM
 from threading import Thread
 from Crypto.PublicKey import RSA
 
@@ -32,9 +33,9 @@ soundname: str | None = None
 ip_list = set()
 
 
-class MessengerSocket(st.socket):
+class MessengerSocket(socket):
     def __init__(self) -> None:
-        super(MessengerSocket, self).__init__(st.AF_INET, st.SOCK_DGRAM)
+        super(MessengerSocket, self).__init__(AF_INET, SOCK_DGRAM)
         return
 
 
@@ -158,11 +159,10 @@ class MessageInput(MDTextField):
                 sound.play()
         else:
             with open("pubkey.pem", "rb") as f:
-                sendkeysocket = st.socket()
+                with socket() as sendkeysocket:
                 sendkeysocket.bind(("", 15202))
                 sendkeysocket.connect((self.empfaenger, 15201))
                 sendkeysocket.sendfile(f, 0)
-                sendkeysocket.close()
             self.disabled = False
         self.text = ""
         self.focus = True
@@ -170,7 +170,10 @@ class MessageInput(MDTextField):
         ip_list.add(self.empfaenger)
         return
 
-    def listenforkey(self):
+    def listenforkey(self) -> None:
+        with socket() as keysocket:
+            keysocket.bind(("", 15201))
+            keysocket.listen(1)
         while True:
             sc, adress = keysocket.accept()
             while data := sc.recv(1024):
@@ -283,9 +286,6 @@ class MessengerWindow(MDApp):
 if __name__ == "__main__":
     serversocket = MessengerSocket()
     serversocket.bind(("", 15200))
-    keysocket = st.socket()
-    keysocket.bind(("", 15201))
-    keysocket.listen(1)
 
     own_ip = st.gethostbyname(st.gethostname())
     if (not os.path.exists("mykey.pem") and not os.path.exists("pubkey.pem")) or (
