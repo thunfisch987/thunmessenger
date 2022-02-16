@@ -33,6 +33,10 @@ soundname: str | None = None
 ip_list = set()
 
 
+class OKButton(MDRaisedButton):
+    pass
+
+
 class MessengerSocket(socket):
     def __init__(self) -> None:
         super(MessengerSocket, self).__init__(AF_INET, SOCK_DGRAM)
@@ -263,7 +267,7 @@ class MessengerWindow(MDApp):
             sound = None
         else:
             sound = SoundLoader.load(f"sounds/{soundname}")
-        self.dialog.dismiss()
+        self.dialog.dismiss()  # type:ignore
 
     def show_confirmation_dialog(self) -> None:
         if not self.dialog:
@@ -278,7 +282,7 @@ class MessengerWindow(MDApp):
                     Item(text="sound.wav"),
                     Item(text="tequila.mp3"),
                 ],
-                buttons=[MDRaisedButton(text="OK")],
+                buttons=[OKButton(text="OK")],
             )
         self.dialog.open()
 
