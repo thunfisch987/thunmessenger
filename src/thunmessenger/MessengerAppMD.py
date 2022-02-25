@@ -42,9 +42,6 @@ class MessengerSocket(socket):
 
 
 class IPInput(MDTextField):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
     def on_focus(self, instance, value) -> None:
         super().on_focus(instance, value)
         if not value:
@@ -56,7 +53,7 @@ class IPInput(MDTextField):
         if self.text != "":
             try:
                 ipaddress.ip_address(self.text)
-            except ValueError as e:
+            except ValueError:
                 self.error = True
         return
 
