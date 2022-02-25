@@ -178,7 +178,7 @@ class MessageInput(MDTextField):
                 sc, adress = keysocket.accept()
                 while data := sc.recv(1024):
                     print(data)
-                    with open(f"{adress[0]}.pem", "wb") as keyfile:
+                    with open(f"pubkeys/{adress[0]}.pem", "wb") as keyfile:
                         keyfile.write(data)
 
     def listenformsg(self) -> None:
@@ -286,6 +286,12 @@ class MessengerWindow(MDApp):
 
 
 if __name__ == "__main__":
+    try:
+        os.mkdir("pubkeys")
+    except OSError as e:
+        print(e)
+    else:
+        print("folder created")
     serversocket = MessengerSocket()
     serversocket.bind(("", 15200))
 
