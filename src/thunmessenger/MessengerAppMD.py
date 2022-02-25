@@ -1,30 +1,26 @@
-from dataclasses import dataclass
-from datetime import datetime
-from functools import partial
 import ipaddress
 import json
 import os
 import socket as st
-from socket import socket, AF_INET, SOCK_DGRAM
+from dataclasses import dataclass
+from datetime import datetime
+from functools import partial
+from socket import AF_INET, SOCK_DGRAM, socket
 from threading import Thread
+
 from Crypto.PublicKey import RSA
-
-from kivy.lang import Builder
-from kivy.config import Config
-
-from kivy.utils import escape_markup
-
-from kivymd.app import MDApp
-from kivymd.uix.textfield import MDTextField
-from kivymd.uix.dialog import MDDialog
-from kivymd.uix.list import OneLineAvatarIconListItem
-from kivymd.uix.list import TwoLineListItem
-from kivymd.uix.button import MDRaisedButton
-from kivy.core.audio import SoundLoader
 from kivy.clock import Clock
-from kivy.properties import ObjectProperty
+from kivy.config import Config
+from kivy.core.audio import SoundLoader
 from kivy.core.window import Window
-
+from kivy.lang import Builder
+from kivy.properties import ObjectProperty
+from kivy.utils import escape_markup
+from kivymd.app import MDApp
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.list import OneLineAvatarIconListItem, TwoLineListItem
+from kivymd.uix.textfield import MDTextField
 
 sound = None
 soundname: str | None = None
