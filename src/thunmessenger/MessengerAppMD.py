@@ -138,7 +138,7 @@ class MessageInput(MDTextField):
         if self.empfaenger in ip_list:
             if self.text == "":
                 return
-            self.name: str = self.username.text
+            self.name: str = self.username.text[:9]
             self.message = Message(name=self.name, msg=self.text[:1000])
             current_time: str = datetime.now().strftime("%H:%M")
             curry_time = f"[{current_time}] "
