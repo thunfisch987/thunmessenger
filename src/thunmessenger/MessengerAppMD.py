@@ -250,6 +250,7 @@ class MessengerWindow(MDApp):
         self.theme_cls.primary_palette = "Green"
 
     def build(self):
+        self.theme_cls.theme_style = "Dark"
         return Builder.load_file("./messengerMD.kv")
 
     def change_sound(self) -> None:
