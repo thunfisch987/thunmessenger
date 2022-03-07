@@ -2,6 +2,7 @@ import ipaddress
 import json
 import os
 import socket as st
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -16,6 +17,7 @@ from kivy.core.audio import SoundLoader
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
+from kivy.resources import resource_add_path, resource_find
 from kivy.utils import escape_markup
 from kivymd.app import MDApp
 from kivymd.uix.button import MDRaisedButton
@@ -284,10 +286,12 @@ class MessengerWindow(MDApp):
 
 
 if __name__ == "__main__":
+    if hasattr(sys, "_MEIPASS"):
+        resource_add_path(os.path.join(sys._MEIPASS))
     try:
         os.mkdir("pubkeys")
     except OSError as e:
-        print(e)
+        pass
     else:
         print("folder created")
     serversocket = MessengerSocket()
