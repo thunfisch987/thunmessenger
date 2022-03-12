@@ -14,10 +14,11 @@ from Crypto.PublicKey import RSA
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.core.audio import Sound, SoundLoader
-from kivy.core.window import Window
+from kivy.core.window import Keyboard, Window
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.resources import resource_add_path, resource_find  # type:ignore
+from kivy.uix.widget import Widget
 from kivy.utils import escape_markup
 from kivymd.app import MDApp
 from kivymd.uix.button import MDRaisedButton
@@ -25,8 +26,6 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.list import OneLineAvatarIconListItem, TwoLineListItem
 from kivymd.uix.list.list import CheckboxLeftWidget
 from kivymd.uix.textfield import MDTextField
-from kivy.uix.widget import Widget
-from kivy.core.window import Keyboard
 
 sound: Sound | None = None
 sound_name: str | None
