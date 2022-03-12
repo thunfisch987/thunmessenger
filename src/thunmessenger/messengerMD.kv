@@ -87,7 +87,7 @@ Messenger:
             disabled: (ip_input.text if ip_input.text != "" else "127.0.0.1") not in self.ip_list_for_widget
         SendButton:
             id: send_button
-            on_release: message_input.sendmessage()
+            on_release: message_input.send_message()
             icon: "send"
             theme_icon_color: "Custom"
             icon_color: app.theme_cls.primary_color

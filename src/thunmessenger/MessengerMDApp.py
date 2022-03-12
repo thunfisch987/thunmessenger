@@ -13,20 +13,24 @@ from typing import Any
 from Crypto.PublicKey import RSA
 from kivy.clock import Clock
 from kivy.config import Config
-from kivy.core.audio import SoundLoader
+from kivy.core.audio import Sound, SoundLoader
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
-from kivy.resources import resource_add_path, resource_find
+from kivy.resources import resource_add_path, resource_find  # type:ignore
 from kivy.utils import escape_markup
 from kivymd.app import MDApp
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.list import OneLineAvatarIconListItem, TwoLineListItem
+from kivymd.uix.list.list import CheckboxLeftWidget
 from kivymd.uix.textfield import MDTextField
+from kivy.uix.widget import Widget
+from kivy.core.window import Keyboard
 
-sound = None
-soundname: str | None
+sound: Sound | None = None
+sound_name: str | None
+
 ip_list: set[str] = set()
 
 
@@ -41,7 +45,7 @@ class MessengerSocket(socket):
 
 
 class IPInput(MDTextField):
-    def on_focus(self, instance_text_field, focus) -> None:
+    def on_focus(self, instance_text_field: MDTextField, focus: bool) -> None:
 
         super().on_focus(instance_text_field, focus)
         if not focus:
@@ -49,7 +53,6 @@ class IPInput(MDTextField):
         return
 
     def on_text_validate(self, *args: Any, **kwargs: Any) -> None:
-        super().on_text_validate(*args, **kwargs)
         if self.text != "":
             try:
                 ipaddress.ip_address(self.text)
@@ -60,20 +63,21 @@ class IPInput(MDTextField):
 
 @dataclass
 class Sendable:
-    def __jsondumps(self) -> str:
+    def __dict_to_string(self) -> str:
         return json.dumps(self.__dict__)
 
-    def __jsonloads(self, jsonmsg: bytes) -> dict[str, str]:
-        return json.loads(self.__decoded(jsonmsg))
+    def __string_to_dict(self, json_msg: bytes) -> dict[str, str]:
+        return json.loads(self.__decoded(json_msg))
 
-    def __decoded(self, jsonmsg: bytes) -> str:
-        return jsonmsg.decode("utf-8")
+    @staticmethod
+    def __decoded(json_msg: bytes) -> str:
+        return json_msg.decode("utf-8")
 
     def encoded(self) -> bytes:
-        return self.__jsondumps().encode("utf-8")
+        return self.__dict_to_string().encode("utf-8")
 
-    def updt(self, jsonmsg: bytes) -> None:
-        self.__dict__.update(self.__jsonloads(jsonmsg))
+    def updt(self, json_msg: bytes) -> None:
+        self.__dict__.update(self.__string_to_dict(json_msg))
         return
 
 
@@ -93,14 +97,14 @@ class MessageItem(TwoLineListItem):
 class Item(OneLineAvatarIconListItem):
     divider = None
 
-    def set_icon(self, instance_check) -> None:
-        global soundname
+    def set_icon(self, instance_check: CheckboxLeftWidget) -> None:
+        global sound_name
         instance_check.active = True
-        check_list: list = instance_check.get_widgets(instance_check.group)
+        check_list: list[Widget] = instance_check.get_widgets(instance_check.group)
         for check in check_list:
             if check != instance_check:
                 check.active = False
-        soundname = self.text
+        sound_name = self.text
 
 
 class MessageInput(MDTextField):
@@ -109,17 +113,28 @@ class MessageInput(MDTextField):
     ip_input = ObjectProperty(None)
     scroll_view = ObjectProperty(None)
     ip_list_for_widget = ObjectProperty(ip_list)  # giving the kv file the list
+    receiver: str
+    item: MessageItem
+    name: str
+    message: Message
+    incoming_message: Message
 
-    def check_disabled(self, *args: Any, **kwargs):
+    def check_disabled(self, *args: Any, **kwargs: Any):
         return (
             self.ip_input.text if self.ip_input.text != "" else "127.0.0.1"
         ) not in ip_list
 
-    def keyboard_on_key_down(self, *args: Any, **kwargs: Any) -> None | bool:
-        if args[1][1] in ["enter", "return"]:
-            self.sendmessage()
+    def keyboard_on_key_down(
+        self,
+        window: Keyboard,
+        keycode: tuple[int, str],
+        text: str,
+        modifiers: list[str],
+    ) -> bool | None:
+        if keycode[1] in ["enter", "return"]:
+            self.send_message()
             return
-        return super().keyboard_on_key_down(*args, **kwargs)
+        return super().keyboard_on_key_down(window, keycode, text, modifiers)
 
     def insert_msg(
         self, title: str, message: str, i_o: str, *args: Any, **kwargs: Any
@@ -132,20 +147,20 @@ class MessageInput(MDTextField):
         self.scroll_view.scroll_to(self.item)
         return
 
-    def sendmessage(self) -> None:
+    def send_message(self) -> None:
         if not self.ip_input.error and self.ip_input.text != "":
-            self.empfaenger: str = self.ip_input.text
+            self.receiver: str = self.ip_input.text
         else:
-            self.empfaenger: str = "127.0.0.1"
-        if self.empfaenger in ip_list:
+            self.receiver: str = "127.0.0.1"
+        if self.receiver in ip_list:
             if self.text == "":
                 return
             self.name: str = self.username.text[:9]
             self.message = Message(name=self.name, msg=self.text[:1000])
-            current_time: str = datetime.now().strftime("%H:%M")
-            curry_time = f"[{current_time}] "
-            esc_time = escape_markup(curry_time)
-            serversocket.sendto(self.message.encoded(), (self.empfaenger, 15200))
+            esc_time: str = escape_markup(f"[{datetime.now().strftime('%H:%M')}] ")
+            """returns the current time as '[HH:MM] ' """
+
+            serversocket.sendto(self.message.encoded(), (self.receiver, 15200))
             if not self.name:
                 self.insert_msg(f"{esc_time} You:", self.text, "outgoing")
             else:
@@ -155,49 +170,52 @@ class MessageInput(MDTextField):
                     "outgoing",
                 )
             if sound:
+                print(sound)
+                print(type(sound))
                 sound.play()
         else:
             with open("pubkey.pem", "rb") as f:
-                with socket() as sendkeysocket:
-                    sendkeysocket.bind(("", 15202))
-                    sendkeysocket.connect((self.empfaenger, 15201))
-                    sendkeysocket.sendfile(f, 0)
+                with socket() as send_key_socket:
+                    send_key_socket.bind(("", 15202))
+                    send_key_socket.connect((self.receiver, 15201))
+                    send_key_socket.sendfile(f, 0)
             self.disabled = False
         self.text = ""
         self.focus = True
         self.error = False
-        ip_list.add(self.empfaenger)
+        ip_list.add(self.receiver)
         return
 
-    def listenforkey(self) -> None:
-        with socket() as keysocket:
-            keysocket.bind(("", 15201))
-            keysocket.listen(1)
+    @staticmethod
+    def listen_for_key() -> None:
+        with socket() as key_socket:
+            key_socket.bind(("", 15201))
+            key_socket.listen(1)
             while True:
-                sc, adress = keysocket.accept()
+                sc, address = key_socket.accept()
                 while data := sc.recv(1024):
                     print(data)
-                    with open(f"pubkeys/{adress[0]}.pem", "wb") as keyfile:
+                    with open(f"pub-keys/{address[0]}.pem", "wb") as keyfile:
                         keyfile.write(data)
 
-    def listenformsg(self) -> None:
+    def listen_for_msg(self) -> None:
         while True:
-            jsondata, addr = serversocket.recvfrom(1024)
+            json_data, address = serversocket.recvfrom(1024)
             if sound:
                 sound.play()
-            self.incmessage = Message()
-            self.incmessage.updt(jsondata)
+            self.incoming_message = Message()
+            self.incoming_message.updt(json_data)
             current_time = datetime.now().strftime("%H:%M")
             curry_time = f"[{current_time}] "
             esc_time = escape_markup(curry_time)
-            if self.incmessage.name != "":
-                msgtitle = esc_time + self.incmessage.name
-                if addr[0] == "127.0.0.1":
+            if self.incoming_message.name != "":
+                msg_title = esc_time + self.incoming_message.name
+                if address[0] == "127.0.0.1":
                     Clock.schedule_once(
                         partial(
                             self.insert_msg,
-                            f"{msgtitle} (You):",
-                            self.incmessage.msg,
+                            f"{msg_title} (You):",
+                            self.incoming_message.msg,
                             "incoming",
                         )
                     )
@@ -206,38 +224,38 @@ class MessageInput(MDTextField):
                     Clock.schedule_once(
                         partial(
                             self.insert_msg,
-                            f"{msgtitle}:",
-                            self.incmessage.msg,
+                            f"{msg_title}:",
+                            self.incoming_message.msg,
                             "incoming",
                         )
                     )
 
-            elif addr[0] == "127.0.0.1":
-                msgtitle = esc_time + addr[0]
+            elif address[0] == "127.0.0.1":
+                msg_title = esc_time + address[0]
                 Clock.schedule_once(
                     partial(
                         self.insert_msg,
-                        f"{msgtitle} (You):",
-                        self.incmessage.msg,
+                        f"{msg_title} (You):",
+                        self.incoming_message.msg,
                         "incoming",
                     )
                 )
 
             else:
-                msgtitle = esc_time + addr[0]
+                msg_title = esc_time + address[0]
                 Clock.schedule_once(
                     partial(
                         self.insert_msg,
-                        f"{msgtitle}:",
-                        self.incmessage.msg,
+                        f"{msg_title}:",
+                        self.incoming_message.msg,
                         "incoming",
                     )
                 )
 
     def on_parent(self, *args: Any, **kwargs: Any) -> None:
-        receivethread = Thread(target=self.listenformsg, daemon=True)
+        receivethread = Thread(target=self.listen_for_msg, daemon=True)
         receivethread.start()
-        keyrcvthread = Thread(target=self.listenforkey, daemon=True)
+        keyrcvthread = Thread(target=self.listen_for_key, daemon=True)
         keyrcvthread.start()
 
 
@@ -248,7 +266,7 @@ class MessengerWindow(MDApp):
     def __init__(self, *args, **kwargs) -> None:
         Window.softinput_mode = "below_target"  # type: ignore
         Config.set("input", "mouse", "mouse,multitouch_on_demand")
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.theme_cls.primary_palette = "Green"
 
     def build(self):
@@ -256,15 +274,15 @@ class MessengerWindow(MDApp):
         return Builder.load_file("./messengerMD.kv")
 
     def change_sound(self) -> None:
-        global sound, soundname
+        global sound, sound_name
         try:
-            soundname
+            sound_name
         except NameError:
-            soundname = ""
-        if soundname == "no sound":
+            sound_name = ""
+        if sound_name == "no sound":
             sound = None
         else:
-            sound = SoundLoader.load(f"sounds/{soundname}")
+            sound = SoundLoader.load(f"sounds/{sound_name}")
         self.dialog.dismiss()  # type:ignore
 
     def show_confirmation_dialog(self) -> None:
