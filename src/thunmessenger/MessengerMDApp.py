@@ -17,7 +17,7 @@ from kivy.core.audio import Sound, SoundLoader
 from kivy.core.window import Keyboard, Window
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
-from kivy.resources import resource_add_path, resource_find  # type:ignore
+from kivy.resources import resource_add_path
 from kivy.uix.widget import Widget
 from kivy.utils import escape_markup
 from kivymd.app import MDApp
@@ -169,8 +169,6 @@ class MessageInput(MDTextField):
                     "outgoing",
                 )
             if sound:
-                print(sound)
-                print(type(sound))
                 sound.play()
         else:
             with open("pubkey.pem", "rb") as f:
@@ -262,14 +260,17 @@ class MessengerWindow(MDApp):
     dialog = None
     title = "Messenger"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         Window.softinput_mode = "below_target"  # type: ignore
         Config.set("input", "mouse", "mouse,multitouch_on_demand")
+        conf = Config.set("input", "mouse", "mouse,multitouch_on_demand")
+        print(f"\n\n\n{conf}\n\n\n")
         super().__init__(**kwargs)
         self.theme_cls.primary_palette = "Green"
 
-    def build(self):
+    def build(self) -> None:
         self.theme_cls.theme_style = "Dark"
+        self.icon = ""
         return Builder.load_file("./messengerMD.kv")
 
     def change_sound(self) -> None:
@@ -304,10 +305,10 @@ class MessengerWindow(MDApp):
 
 if __name__ == "__main__":
     if hasattr(sys, "_MEIPASS"):
-        resource_add_path(os.path.join(sys._MEIPASS))
+        resource_add_path(os.path.join(sys._MEIPASS))  # type: ignore
     try:
         os.mkdir("pubkeys")
-    except OSError as e:
+    except OSError:
         pass
     else:
         print("folder created")
