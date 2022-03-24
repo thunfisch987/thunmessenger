@@ -84,7 +84,7 @@ Messenger:
             max_height: "100dp"
             multiline: True
             max_text_length: 1000
-            disabled: (ip_input.text if ip_input.text != "" else "127.0.0.1") not in self.ip_list_for_widget
+            disabled: (ip_input.text if ip_input.text != "" else "127.0.0.1") not in self.ip_set_for_widget
         SendButton:
             id: send_button
             on_release: message_input.send_message()

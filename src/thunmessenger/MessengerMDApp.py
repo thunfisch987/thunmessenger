@@ -30,7 +30,7 @@ from kivymd.uix.textfield import MDTextField
 sound: Sound | None = None
 sound_name: str | None
 
-ip_list: set[str] = set()
+ip_set: set[str] = set()
 
 
 class OKButton(MDRaisedButton):
@@ -107,11 +107,7 @@ class Item(OneLineAvatarIconListItem):
 
 
 class MessageInput(MDTextField):
-    output = ObjectProperty(None)
-    username = ObjectProperty(None)
-    ip_input = ObjectProperty(None)
-    scroll_view = ObjectProperty(None)
-    ip_list_for_widget = ObjectProperty(ip_list)  # giving the kv file the list
+    ip_set_for_widget = ObjectProperty(ip_set)  # giving the kv file the list
     receiver: str
     item: MessageItem
     name: str
@@ -121,7 +117,7 @@ class MessageInput(MDTextField):
     def check_disabled(self, *args: Any, **kwargs: Any):
         return (
             self.ip_input.text if self.ip_input.text != "" else "127.0.0.1"
-        ) not in ip_list
+        ) not in ip_set
 
     def keyboard_on_key_down(
         self,
@@ -151,7 +147,7 @@ class MessageInput(MDTextField):
             self.receiver: str = self.ip_input.text
         else:
             self.receiver: str = "127.0.0.1"
-        if self.receiver in ip_list:
+        if self.receiver in ip_set:
             if self.text == "":
                 return
             self.name: str = self.username.text[:9]
@@ -180,7 +176,7 @@ class MessageInput(MDTextField):
         self.text = ""
         self.focus = True
         self.error = False
-        ip_list.add(self.receiver)
+        ip_set.add(self.receiver)
         return
 
     @staticmethod
