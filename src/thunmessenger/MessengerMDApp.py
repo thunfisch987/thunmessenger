@@ -23,8 +23,9 @@ from kivy.utils import escape_markup
 from kivymd.app import MDApp
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.list import OneLineAvatarIconListItem, TwoLineListItem
+from kivymd.uix.list import MDList, OneLineAvatarIconListItem, TwoLineListItem
 from kivymd.uix.list.list import CheckboxLeftWidget
+from kivy.uix.scrollview import ScrollView
 from kivymd.uix.textfield import MDTextField
 
 sound: Sound | None = None
@@ -107,6 +108,10 @@ class Item(OneLineAvatarIconListItem):
 
 
 class MessageInput(MDTextField):
+    output = ObjectProperty(MDList)
+    username = ObjectProperty(MDTextField)
+    ip_input = ObjectProperty(MDTextField)
+    scroll_view = ObjectProperty(ScrollView)
     ip_set_for_widget = ObjectProperty(ip_set)  # giving the kv file the list
     receiver: str
     item: MessageItem
