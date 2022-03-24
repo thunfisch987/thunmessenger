@@ -259,8 +259,6 @@ class MessengerWindow(MDApp):
     def __init__(self, **kwargs: Any) -> None:
         Window.softinput_mode = "below_target"  # type: ignore
         Config.set("input", "mouse", "mouse,multitouch_on_demand")
-        conf = Config.set("input", "mouse", "mouse,multitouch_on_demand")
-        print(f"\n\n\n{conf}\n\n\n")
         super().__init__(**kwargs)
         self.theme_cls.primary_palette = "Green"
 
