@@ -90,8 +90,8 @@ class Message(Sendable):
 class MessageItem(TwoLineListItem):
     def __init__(self, text: str, sec: str, halign: str = "left") -> None:
         super().__init__(text=text, secondary_text=sec)
-        self.ids._lbl_primary.halign = halign
-        self.ids._lbl_secondary.halign = halign
+        self.ids["_lbl_primary"].halign = halign
+        self.ids["_lbl_secondary"].halign = halign
 
 
 class Item(OneLineAvatarIconListItem):
@@ -148,6 +148,7 @@ class MessageInput(MDTextField):
         return
 
     def send_message(self) -> None:
+        global message_port, key_port, sendkey_port
         if not self.ip_input.error and self.ip_input.text != "":
             self.receiver: str = self.ip_input.text
         else:
@@ -160,7 +161,7 @@ class MessageInput(MDTextField):
             esc_time: str = escape_markup(f"[{datetime.now().strftime('%H:%M')}] ")
             """returns the current time as '[HH:MM] ' """
 
-            serversocket.sendto(self.message.encoded(), (self.receiver, 15200))
+            serversocket.sendto(self.message.encoded(), (self.receiver, message_port))
             if not self.name:
                 self.insert_msg(f"{esc_time} You:", self.text, "outgoing")
             else:
@@ -174,8 +175,9 @@ class MessageInput(MDTextField):
         else:
             with open("pubkey.pem", "rb") as f:
                 with socket() as send_key_socket:
-                    send_key_socket.bind(("", 15202))
-                    send_key_socket.connect((self.receiver, 15201))
+                    send_key_socket.bind(("", 0))
+                    sendkey_port = send_key_socket.getsockname()[1]
+                    send_key_socket.connect((self.receiver, key_port))
                     send_key_socket.sendfile(f, 0)
             self.disabled = False
         self.text = ""
@@ -186,8 +188,10 @@ class MessageInput(MDTextField):
 
     @staticmethod
     def listen_for_key() -> None:
+        global key_port
         with socket() as key_socket:
-            key_socket.bind(("", 15201))
+            key_socket.bind(("", 0))
+            key_port = key_socket.getsockname()[1]
             key_socket.listen(1)
             while True:
                 sc, address = key_socket.accept()
@@ -311,8 +315,10 @@ if __name__ == "__main__":
         pass
     else:
         print("folder created")
+
     serversocket = MessengerSocket()
-    serversocket.bind(("", 15200))
+    serversocket.bind(("", 0))
+    message_port = serversocket.getsockname()[1]
 
     own_ip = st.gethostbyname(st.gethostname())
     if (not os.path.exists("mykey.pem") and not os.path.exists("pubkey.pem")) or (
