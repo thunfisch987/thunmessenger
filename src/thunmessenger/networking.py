@@ -1,7 +1,7 @@
 __all__ = ("AES_Cipher_Message", "Message", "PublicKeyMessage", "MessengerSocket")
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from socket import AF_INET, SOCK_DGRAM, socket
 
 

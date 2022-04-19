@@ -7,6 +7,6 @@ __all__ = (
     "OKButton",
 )
 
+from .buttons import OKButton, RaisedIconButton
 from .inputs import IPInput
-from .items import SoundItem, MessageItem, InformationItem
-from .buttons import RaisedIconButton, OKButton
+from .items import InformationItem, MessageItem, SoundItem

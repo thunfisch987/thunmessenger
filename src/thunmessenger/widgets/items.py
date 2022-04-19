@@ -1,14 +1,14 @@
 from typing import Any
 
+from kivy.core.clipboard import Clipboard
+from kivy.properties import StringProperty
+from kivy.uix.widget import Widget
 from kivymd.uix.list import (
-    OneLineIconListItem,
-    OneLineAvatarIconListItem,
     CheckboxLeftWidget,
+    OneLineAvatarIconListItem,
+    OneLineIconListItem,
     TwoLineListItem,
 )
-from kivy.properties import StringProperty
-from kivy.core.clipboard import Clipboard
-from kivy.uix.widget import Widget
 
 
 class InformationItem(OneLineIconListItem):
