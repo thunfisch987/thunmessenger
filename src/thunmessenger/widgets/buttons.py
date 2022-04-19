@@ -1,5 +1,3 @@
-# pyright: reportIncompatibleMethodOverride=false
-# pyright: reportIncompatibleVariableOverride=false
 from kivymd.uix.behaviors import FakeRectangularElevationBehavior
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.button.button import (
