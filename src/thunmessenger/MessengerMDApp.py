@@ -1,110 +1,45 @@
-import ipaddress
-import json
 import os
 import socket as st
 import sys
-from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from socket import AF_INET, SOCK_DGRAM, socket
+from socket import socket
 from threading import Thread
 from typing import Any
 
-from Crypto.PublicKey import RSA
-from kivy.clock import Clock
-from kivy.config import Config
-from kivy.core.audio import Sound, SoundLoader
-from kivy.core.window import Keyboard, Window
-from kivy.lang import Builder
-from kivy.properties import ObjectProperty
-from kivy.resources import resource_add_path
-from kivy.uix.widget import Widget
-from kivy.utils import escape_markup
+from kivy_imports import (
+    Clock,
+    Config,
+    Sound,
+    SoundLoader,
+    Keyboard,
+    Window,
+    Builder,
+    ObjectProperty,
+    escape_markup,
+    resource_add_path,
+    ScrollView,
+)
 from kivymd.app import MDApp
-from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.list import MDList, OneLineAvatarIconListItem, TwoLineListItem
-from kivymd.uix.list.list import CheckboxLeftWidget
-from kivy.uix.scrollview import ScrollView
+from kivymd.uix.list import MDList
 from kivymd.uix.textfield import MDTextField
 
+
+from widgets import InformationItem, SoundItem, MessageItem, OKButton
+
+from encryption import new_cipher, create_rsa_files
+from networking import (
+    AES_Cipher_Message,
+    Message,
+    PublicKeyMessage,
+    MessengerSocket,
+)  # pyright: reportUnusedImport=false
+
 sound: Sound | None = None
-sound_name: str | None
+sound_name: str | None = ""
 
 ip_set: set[str] = set()
-
-
-class OKButton(MDRaisedButton):
-    pass
-
-
-class MessengerSocket(socket):
-    def __init__(self) -> None:
-        super(MessengerSocket, self).__init__(AF_INET, SOCK_DGRAM)
-        return
-
-
-class IPInput(MDTextField):
-    def on_focus(self, instance_text_field: MDTextField, focus: bool) -> None:
-
-        super().on_focus(instance_text_field, focus)
-        if not focus:
-            self.on_text_validate()
-        return
-
-    def on_text_validate(self, *args: Any, **kwargs: Any) -> None:
-        if self.text != "":
-            try:
-                ipaddress.ip_address(self.text)
-            except ValueError:
-                self.error = True
-        return
-
-
-@dataclass
-class Sendable:
-    def __dict_to_string(self) -> str:
-        return json.dumps(self.__dict__)
-
-    def __string_to_dict(self, json_msg: bytes) -> dict[str, str]:
-        return json.loads(self.__decoded(json_msg))
-
-    @staticmethod
-    def __decoded(json_msg: bytes) -> str:
-        return json_msg.decode("utf-8")
-
-    def encoded(self) -> bytes:
-        return self.__dict_to_string().encode("utf-8")
-
-    def updt(self, json_msg: bytes) -> None:
-        self.__dict__.update(self.__string_to_dict(json_msg))
-        return
-
-
-@dataclass
-class Message(Sendable):
-    name: str = ""
-    msg: str = ""
-
-
-class MessageItem(TwoLineListItem):
-    def __init__(self, text: str, sec: str, halign: str = "left") -> None:
-        super().__init__(text=text, secondary_text=sec)
-        self.ids["_lbl_primary"].halign = halign
-        self.ids["_lbl_secondary"].halign = halign
-
-
-class Item(OneLineAvatarIconListItem):
-    divider = None
-
-    def set_icon(self, instance_check: CheckboxLeftWidget) -> None:
-        global sound_name
-        instance_check.active = True
-        check_list: list[Widget] = instance_check.get_widgets(instance_check.group)
-        for check in check_list:
-            if check != instance_check:
-                check.active = False
-        sound_name = self.text
 
 
 class MessageInput(MDTextField):
@@ -112,7 +47,8 @@ class MessageInput(MDTextField):
     username = ObjectProperty(MDTextField)
     ip_input = ObjectProperty(MDTextField)
     scroll_view = ObjectProperty(ScrollView)
-    ip_set_for_widget = ObjectProperty(ip_set)  # giving the kv file the list
+    ip_set_for_widget = ObjectProperty(ip_set)
+    """giving the kv file the set of ip_adresses"""
     receiver: str
     item: MessageItem
     name: str
@@ -206,7 +142,7 @@ class MessageInput(MDTextField):
             if sound:
                 sound.play()
             self.incoming_message = Message()
-            self.incoming_message.updt(json_data)
+            self.incoming_message.update_dict(json_data)
             current_time = datetime.now().strftime("%H:%M")
             curry_time = f"[{current_time}] "
             esc_time = escape_markup(curry_time)
@@ -321,14 +257,8 @@ if __name__ == "__main__":
     message_port = serversocket.getsockname()[1]
 
     own_ip = st.gethostbyname(st.gethostname())
-    if (not os.path.exists("mykey.pem") and not os.path.exists("pubkey.pem")) or (
-        not os.path.exists("mykey.pem") or not os.path.exists("pubkey.pem")
-    ):
-        rsakey = RSA.generate(2048)
-        with open("mykey.pem", "wb") as privfile:
-            privfile.write(rsakey.export_key("PEM"))
-        with open("pubkey.pem", "wb") as pubfile:
-            pubfile.write(rsakey.public_key().export_key("PEM"))
+    create_rsa_files()
+    new_aes = new_cipher()
     MessengerWindow().run()
 else:
     print("imports not allowed")
