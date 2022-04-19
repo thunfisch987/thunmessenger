@@ -6,7 +6,7 @@
 <CharacterLabel@MDLabel>
 <SendButton@MDIconButton>
 <Messenger@MDGridLayout>
-<Item>:
+<SoundItem>:
     on_release: root.set_icon(check)
     CheckboxLeftWidget:
         id: check
@@ -14,6 +14,11 @@
 
 <OKButton>:
     on_release: app.change_sound()
+<InformationItem>:
+    icon_chooser: ""
+    on_release: self.copy_to_clipboard()
+    IconLeftWidget:
+        icon: root.icon_chooser
 
 
 Messenger:
@@ -24,6 +29,7 @@ Messenger:
     MDBoxLayout:
         id: username_frame
         adaptive_height: True
+        padding: [0, 5]
         UsernameField:
             id: name_input
             hint_text: "Username:"
@@ -49,9 +55,9 @@ Messenger:
     MDBoxLayout:
         # size_hint_y: None
         adaptive_height: True
+        padding: [0, 5]
         IPInput:
             id: ip_input
-            padding: [10]
             hint_text: "IP Address"
             helper_text: "Invalid IP"
             helper_text_mode: "on_error"
@@ -59,6 +65,12 @@ Messenger:
             multiline: False
             write_tab: False
             max_text_length: 15
+        RaisedIconButton:
+            text: "Port & IP Address"
+            on_release: app.show_information_dialog()
+            icon: "information-outline"
+            icon_color: "black"
+            # size_hint_x: 0.1
 
 
     MDSeparator:

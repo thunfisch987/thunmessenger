@@ -198,7 +198,8 @@ class MessageInput(MDTextField):
 
 
 class MessengerWindow(MDApp):
-    dialog = None
+    confirmation_dialog = None
+    information_dialog = None
     title = "Messenger"
 
     def __init__(self, **kwargs: Any) -> None:
@@ -222,24 +223,36 @@ class MessengerWindow(MDApp):
             sound = None
         else:
             sound = SoundLoader.load(f"sounds/{sound_name}")
-        self.dialog.dismiss()  # type:ignore
+        self.confirmation_dialog.dismiss()  # type:ignore
+
+    def show_information_dialog(self):
+        if not self.information_dialog:
+            self.information_dialog = MDDialog(
+                title="Port & IP Address",
+                type="simple",
+                items=[
+                    InformationItem(text=own_ip, icon="map-marker"),
+                    InformationItem(text=str(message_port), icon="ethernet"),
+                ],
+            )
+        self.information_dialog.open()
 
     def show_confirmation_dialog(self) -> None:
-        if not self.dialog:
-            self.dialog = MDDialog(
+        if not self.confirmation_dialog:
+            self.confirmation_dialog = MDDialog(
                 title="Choose sound:",
                 type="confirmation",
                 items=[
-                    Item(text="no sound"),
-                    Item(text="bakugo.mp3"),
-                    Item(text="jamie.mp3"),
-                    Item(text="peekaboo.mp3"),
-                    Item(text="sound.wav"),
-                    Item(text="tequila.mp3"),
+                    SoundItem(text="no sound"),
+                    SoundItem(text="bakugo.mp3"),
+                    SoundItem(text="jamie.mp3"),
+                    SoundItem(text="peekaboo.mp3"),
+                    SoundItem(text="sound.wav"),
+                    SoundItem(text="tequila.mp3"),
                 ],
                 buttons=[OKButton(text="OK")],
             )
-        self.dialog.open()
+        self.confirmation_dialog.open()
 
 
 if __name__ == "__main__":
