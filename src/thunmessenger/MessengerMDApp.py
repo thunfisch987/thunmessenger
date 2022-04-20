@@ -92,7 +92,6 @@ class MessageInput(MDTextField):
             self.name: str = self.username.text[:9]
             self.message = Message(name=self.name, msg=self.text[:1000])
             esc_time: str = escape_markup(f"[{datetime.now().strftime('%H:%M')}] ")
-            """returns the current time as '[HH:MM] ' """
 
             serversocket.sendto(self.message.encoded(), (self.receiver, message_port))
             if not self.name:
