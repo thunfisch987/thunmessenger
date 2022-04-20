@@ -31,7 +31,10 @@ from widgets import InformationItem, MessageItem, OKButton, SoundItem
 sound: Sound | None = None
 sound_name: str | None = ""
 key_port = None
+sendkey_port = None
 own_port = None
+message_port = None
+
 
 ip_set: set[str] = set()
 
