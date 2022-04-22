@@ -30,7 +30,6 @@ from networking import Message, MessengerSocket
 from widgets import InformationItem, MessageItem, SoundItem
 
 sound: Sound | None = None
-sendkey_port = None
 own_port = None
 message_port = None
 
@@ -80,7 +79,6 @@ class MessageInput(MDTextField):
         return
 
     def send_message(self) -> None:
-        global sendkey_port
         if not self.ip_input.error and self.ip_input.text != "":
             self.receiver: str = self.ip_input.text
         else:
@@ -107,7 +105,7 @@ class MessageInput(MDTextField):
             with open("pubkey.pem", "rb") as f:
                 with socket() as send_key_socket:
                     send_key_socket.bind(("", 0))
-                    sendkey_port = send_key_socket.getsockname()[1]
+                    # sendkey_port = send_key_socket.getsockname()[1]
                     send_key_socket.connect((self.receiver, self.key_port))
                     send_key_socket.sendfile(f, 0)
             self.disabled = False
