@@ -29,7 +29,6 @@ from kivymd.uix.textfield import MDTextField
 from networking import Message, MessengerSocket
 from widgets import InformationItem, MessageItem, SoundItem
 
-sound: Sound | None = None
 own_port = None
 message_port = None
 
@@ -49,6 +48,7 @@ class MessageInput(MDTextField):
     name: str
     message: Message
     incoming_message: Message
+    sound: Sound | None = None
 
     def check_disabled(self, *args: Any, **kwargs: Any):
         return (
@@ -99,8 +99,8 @@ class MessageInput(MDTextField):
                     self.text,
                     "outgoing",
                 )
-            if sound:
-                sound.play()
+            # if sound:
+            #     sound.play()
         else:
             with open("pubkey.pem", "rb") as f:
                 with socket() as send_key_socket:
@@ -130,8 +130,8 @@ class MessageInput(MDTextField):
     def listen_for_msg(self) -> None:
         while True:
             json_data, address = serversocket.recvfrom(1024)
-            if sound:
-                sound.play()
+            if self.sound:
+                self.sound.play()
             self.incoming_message = Message()
             self.incoming_message.update_dict(json_data)
             current_time = datetime.now().strftime("%H:%M")
@@ -207,7 +207,7 @@ class MessengerWindow(MDApp):
     def change_sound_and_set_icon(
         self, instance_check: CheckboxLeftWidget, item: SoundItem
     ) -> None:
-        global sound
+        print(self.root.children[0].children[1].sound)  # type: ignore
         instance_check.active = True
         check_list: list[Widget] = instance_check.get_widgets(instance_check.group)
         for check in check_list:
@@ -215,9 +215,11 @@ class MessengerWindow(MDApp):
                 check.active = False
         sound_name = item.text
         if sound_name == "no sound":
-            sound = None
+            self.root.children[0].children[1].sound = None  # type: ignore
             return
-        sound = SoundLoader.load(f"sounds/{sound_name}")
+        self.root.children[0].children[1].sound = SoundLoader.load(
+            f"sounds/{sound_name}"
+        )  # pyright: reportUnknownMemberType=false
 
     def show_information_dialog(self):
         if not self.information_dialog:

@@ -4,9 +4,8 @@ __all__ = (
     "MessageItem",
     "InformationItem",
     "RaisedIconButton",
-    "OKButton",
 )
 
-from .buttons import OKButton, RaisedIconButton
+from .buttons import RaisedIconButton
 from .inputs import IPInput
 from .items import InformationItem, MessageItem, SoundItem
