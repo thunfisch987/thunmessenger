@@ -7,13 +7,11 @@
 <SendButton@MDIconButton>
 <Messenger@MDGridLayout>
 <SoundItem>:
-    on_release: root.set_icon(check)
+    on_release: app.change_sound_and_set_icon(check, root)
     CheckboxLeftWidget:
         id: check
         group: "check"
 
-<OKButton>:
-    on_release: app.change_sound()
 <InformationItem>:
     icon_chooser: ""
     on_release: self.copy_to_clipboard()

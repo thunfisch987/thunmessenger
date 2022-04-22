@@ -17,20 +17,19 @@ from kivy_imports import (
     ScrollView,
     Sound,
     SoundLoader,
+    Widget,
     Window,
     escape_markup,
     resource_add_path,
 )
 from kivymd.app import MDApp
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.list import MDList
+from kivymd.uix.list import CheckboxLeftWidget, MDList
 from kivymd.uix.textfield import MDTextField
 from networking import Message, MessengerSocket
-from widgets import InformationItem, MessageItem, OKButton, SoundItem
+from widgets import InformationItem, MessageItem, SoundItem
 
 sound: Sound | None = None
-sound_name: str | None = ""
-key_port = None
 sendkey_port = None
 own_port = None
 message_port = None
@@ -81,7 +80,7 @@ class MessageInput(MDTextField):
         return
 
     def send_message(self) -> None:
-        global message_port, key_port, sendkey_port
+        global sendkey_port
         if not self.ip_input.error and self.ip_input.text != "":
             self.receiver: str = self.ip_input.text
         else:
@@ -109,7 +108,7 @@ class MessageInput(MDTextField):
                 with socket() as send_key_socket:
                     send_key_socket.bind(("", 0))
                     sendkey_port = send_key_socket.getsockname()[1]
-                    send_key_socket.connect((self.receiver, key_port))
+                    send_key_socket.connect((self.receiver, self.key_port))
                     send_key_socket.sendfile(f, 0)
             self.disabled = False
         self.text = ""
@@ -118,12 +117,10 @@ class MessageInput(MDTextField):
         ip_set.add(self.receiver)
         return
 
-    @staticmethod
-    def listen_for_key() -> None:
-        global key_port
+    def listen_for_key(self) -> None:
         with socket() as key_socket:
             key_socket.bind(("", 0))
-            key_port = key_socket.getsockname()[1]
+            self.key_port = key_socket.getsockname()[1]
             key_socket.listen(1)
             while True:
                 sc, address = key_socket.accept()
@@ -209,17 +206,20 @@ class MessengerWindow(MDApp):
         self.icon = ""
         return Builder.load_file("./messengerMD.kv")
 
-    def change_sound(self) -> None:
-        global sound, sound_name
-        try:
-            sound_name
-        except NameError:
-            sound_name = ""
+    def change_sound_and_set_icon(
+        self, instance_check: CheckboxLeftWidget, item: SoundItem
+    ) -> None:
+        global sound
+        instance_check.active = True
+        check_list: list[Widget] = instance_check.get_widgets(instance_check.group)
+        for check in check_list:
+            if check != instance_check:
+                check.active = False
+        sound_name = item.text
         if sound_name == "no sound":
             sound = None
-        else:
-            sound = SoundLoader.load(f"sounds/{sound_name}")
-        self.confirmation_dialog.dismiss()  # type:ignore
+            return
+        sound = SoundLoader.load(f"sounds/{sound_name}")
 
     def show_information_dialog(self):
         if not self.information_dialog:
@@ -237,7 +237,7 @@ class MessengerWindow(MDApp):
         if not self.confirmation_dialog:
             self.confirmation_dialog = MDDialog(
                 title="Choose sound:",
-                type="confirmation",
+                type="simple",
                 items=[
                     SoundItem(text="no sound"),
                     SoundItem(text="bakugo.mp3"),
@@ -246,7 +246,6 @@ class MessengerWindow(MDApp):
                     SoundItem(text="sound.wav"),
                     SoundItem(text="tequila.mp3"),
                 ],
-                buttons=[OKButton(text="OK")],
             )
         self.confirmation_dialog.open()
 

@@ -2,9 +2,7 @@ from typing import Any
 
 from kivy.core.clipboard import Clipboard
 from kivy.properties import StringProperty
-from kivy.uix.widget import Widget
 from kivymd.uix.list import (
-    CheckboxLeftWidget,
     OneLineAvatarIconListItem,
     OneLineIconListItem,
     TwoLineListItem,
@@ -25,15 +23,6 @@ class InformationItem(OneLineIconListItem):
 
 class SoundItem(OneLineAvatarIconListItem):
     divider = None
-
-    def set_icon(self, instance_check: CheckboxLeftWidget) -> None:
-        global sound_name
-        instance_check.active = True
-        check_list: list[Widget] = instance_check.get_widgets(instance_check.group)
-        for check in check_list:
-            if check != instance_check:
-                check.active = False
-        sound_name = self.text
 
 
 class MessageItem(TwoLineListItem):
